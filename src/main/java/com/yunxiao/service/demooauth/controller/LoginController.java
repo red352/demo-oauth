@@ -1,9 +1,11 @@
 package com.yunxiao.service.demooauth.controller;
 
+import com.yunxiao.service.demooauth.client.auth.PersistenceTokenService;
+import com.yunxiao.service.demooauth.client.login.LoginAuthentication;
+import com.yunxiao.service.demooauth.client.login.LoginUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,19 +20,25 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class LoginController {
 
+    private final PersistenceTokenService persistenceTokenService;
     private final UserDetailsRepositoryReactiveAuthenticationManager manager;
 
     @GetMapping
-    public String hello() {
-        return "hello world";
+    public Mono<?> hello() {
+//        return ReactiveSecurityContextHolder.getContext()
+//                .map(SecurityContext::getAuthentication);
+        return Mono.just("hello");
     }
 
     @PostMapping("/login")
-    public Mono<Authentication> login(@RequestBody LoginDto loginDto) {
-        return manager.authenticate(loginDto)
-                .flatMap(authentication -> ReactiveSecurityContextHolder.getContext()
-                        .doOnNext(securityContext -> securityContext.setAuthentication(authentication))
-                        .thenReturn(authentication));
+    public Mono<?> login(@RequestBody LoginAuthentication loginAuthentication) {
+        return manager.authenticate(loginAuthentication)
+                .map(Authentication::getPrincipal)
+                .cast(LoginUserDetails.class)
+                .map(authed -> {
+                    authed.setAccessToken(persistenceTokenService.allocateToken(authed.getUsername()).getKey());
+                    return authed;
+                });
     }
 }
 

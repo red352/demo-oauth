@@ -1,5 +1,6 @@
-package com.yunxiao.service.demooauth.controller;
+package com.yunxiao.service.demooauth.client.login;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -10,13 +11,16 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
  */
 @Getter
 @Setter
-public class LoginDto extends UsernamePasswordAuthenticationToken {
+@EqualsAndHashCode(callSuper = true)
+public class LoginAuthentication extends UsernamePasswordAuthenticationToken{
 
 
     private String username;
     private String password;
 
-    public LoginDto(String username, String password) {
+    public LoginAuthentication(String username, String password) {
         super(username, password);
     }
+
+
 }

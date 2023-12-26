@@ -1,23 +1,20 @@
 package com.yunxiao.service.demooauth;
 
-import com.yunxiao.service.demooauth.security.UserDetailServiceImpl;
+import com.yunxiao.service.demooauth.client.auth.PersistenceTokenService;
+import com.yunxiao.service.demooauth.client.auth.TokenAuthenticationManager;
+import com.yunxiao.service.demooauth.client.auth.TokenConvert;
+import com.yunxiao.service.demooauth.client.login.LoginUserDetails;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.InMemoryReactiveOAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.DefaultReactiveOAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.web.server.AuthenticatedPrincipalServerOAuth2AuthorizedClientRepository;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
-import org.springframework.web.server.ServerWebExchange;
+import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import reactor.core.publisher.Mono;
 
 
@@ -28,30 +25,26 @@ public class DemoOauthApplication {
         SpringApplication.run(DemoOauthApplication.class, args);
     }
 
+    //    Authorization: Bearer 123token
     @Bean
-    SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        // TODO:
-        InMemoryReactiveClientRegistrationRepository repository = new InMemoryReactiveClientRegistrationRepository();
-        ReactiveOAuth2AuthorizedClientManager manager = new DefaultReactiveOAuth2AuthorizedClientManager(
-                repository,
-                new AuthenticatedPrincipalServerOAuth2AuthorizedClientRepository(new InMemoryReactiveOAuth2AuthorizedClientService(repository))
-        );
+    SecurityWebFilterChain securityWebFilterChain(final ServerHttpSecurity http) {
+        AuthenticationWebFilter tokenFilter = new AuthenticationWebFilter(new TokenAuthenticationManager(persistenceTokenService(), reactiveUserDetailsService()));
+        tokenFilter.setServerAuthenticationConverter(new TokenConvert());
         return http
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(authorize ->
                         authorize.pathMatchers("/login").permitAll()
                                 .anyExchange().authenticated())
-                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                // TODO:
-                .oauth2Login(oauth2Login -> oauth2Login
-                        .authenticationConverter(new ServerAuthenticationConverter() {
-                            @Override
-                            public Mono<Authentication> convert(ServerWebExchange exchange) {
-                                return null;
-                            }
-                        })
-                        .authenticationManager(userDetailsRepositoryReactiveAuthenticationManager()))
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .addFilterAt(tokenFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .build();
+    }
+
+
+    @Bean
+    PersistenceTokenService persistenceTokenService() {
+        return PersistenceTokenService.defaultService();
     }
 
     @Bean
@@ -60,13 +53,14 @@ public class DemoOauthApplication {
     }
 
     @Bean
-    ReactiveUserDetailsService userDetailsService() {
-        return new UserDetailServiceImpl(passwordEncoder());
+    ReactiveUserDetailsService reactiveUserDetailsService() {
+        LoginUserDetails user = new LoginUserDetails(1, "admin", passwordEncoder().encode("admin"), 1, null);
+        return username -> Mono.just(user);
     }
 
     @Bean
     UserDetailsRepositoryReactiveAuthenticationManager userDetailsRepositoryReactiveAuthenticationManager() {
-        UserDetailsRepositoryReactiveAuthenticationManager manager = new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsService());
+        UserDetailsRepositoryReactiveAuthenticationManager manager = new UserDetailsRepositoryReactiveAuthenticationManager(reactiveUserDetailsService());
         manager.setPasswordEncoder(passwordEncoder());
         return manager;
     }
