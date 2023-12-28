@@ -19,7 +19,7 @@ public class BearerTokenAuthenticationConvert implements ServerAuthenticationCon
         List<String> list = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
         if (list != null && !list.isEmpty() && list.getFirst().startsWith("Bearer ")) {
             String token = list.getFirst().substring(7);
-            return Mono.just(new PreAuthenticatedAuthenticationToken(token, token));
+            return Mono.just(new PreAuthenticatedAuthenticationToken(token, null));
         }
         return Mono.empty();
     }

@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
  * @since 2023/12/26 18:56
  */
 @AllArgsConstructor
-public class TokenAuthenticationManager implements ReactiveAuthenticationManager {
+public class SimpleTokenAuthenticationManager implements ReactiveAuthenticationManager {
 
     private final JOSEService joseService;
     private final ReactiveUserDetailsService userDetailsService;
@@ -32,7 +32,6 @@ public class TokenAuthenticationManager implements ReactiveAuthenticationManager
                 return Mono.just(authentication);
             }
             if (joseObject != null) {
-                authenticationToken.setAuthenticated(true);
                 return userDetailsService.findByUsername(joseService.getPrincipal(joseObject))
                         .map(user -> new PreAuthenticatedAuthenticationToken(user.getUsername(), user.getPassword(), user.getAuthorities()));
             }

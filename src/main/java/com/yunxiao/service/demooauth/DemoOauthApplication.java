@@ -3,10 +3,11 @@ package com.yunxiao.service.demooauth;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.yunxiao.service.demooauth.client.SimpleFilterChainFactory;
-import com.yunxiao.service.demooauth.client.auth.TokenAuthenticationManager;
+import com.yunxiao.service.demooauth.client.auth.SimpleTokenAuthenticationManager;
 import com.yunxiao.service.demooauth.client.login.LoginUserDetails;
 import com.yunxiao.service.demooauth.client.token.JwtService;
 import com.yunxiao.service.demooauth.client.token.JwtServiceFactory;
+import com.yunxiao.service.demooauth.cors.EnableCors;
 import lombok.SneakyThrows;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -24,7 +25,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
 
-
+@EnableCors
 @SpringBootApplication
 public class DemoOauthApplication {
 
@@ -35,7 +36,7 @@ public class DemoOauthApplication {
     //    Authorization: Bearer 123token
     @Bean
     SecurityWebFilterChain securityWebFilterChain(final ServerHttpSecurity http) {
-        TokenAuthenticationManager manager = new TokenAuthenticationManager(jwtService(), reactiveUserDetailsService());
+        SimpleTokenAuthenticationManager manager = new SimpleTokenAuthenticationManager(jwtService(), reactiveUserDetailsService());
         return SimpleFilterChainFactory.simpleAuthenticationFilter(http, manager);
     }
 

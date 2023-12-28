@@ -6,7 +6,6 @@ import org.springframework.security.core.token.TokenService;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.UUID;
 
 
 /**
@@ -15,11 +14,10 @@ import java.util.UUID;
  */
 public class PersistenceTokenProcessor implements TokenService {
 
-    private static final String SERVER_SECRET = UUID.randomUUID().toString();
 
     private final KeyBasedPersistenceTokenService tokenService;
 
-    public static PersistenceTokenProcessor defaultService() {
+    public static PersistenceTokenProcessor defaultService(String secretKey) {
         KeyBasedPersistenceTokenService tokenService = new KeyBasedPersistenceTokenService();
         try {
             tokenService.setSecureRandom(SecureRandom.getInstanceStrong());
@@ -27,7 +25,7 @@ public class PersistenceTokenProcessor implements TokenService {
             throw new RuntimeException(e);
         }
         tokenService.setServerInteger(1);
-        tokenService.setServerSecret(SERVER_SECRET);
+        tokenService.setServerSecret(secretKey);
         tokenService.afterPropertiesSet();
         return new PersistenceTokenProcessor(tokenService);
     }

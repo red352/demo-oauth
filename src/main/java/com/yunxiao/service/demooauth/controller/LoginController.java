@@ -6,6 +6,7 @@ import com.yunxiao.service.demooauth.client.token.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,10 +28,10 @@ public class LoginController {
     private final UserDetailsRepositoryReactiveAuthenticationManager manager;
 
     @GetMapping
-    public Mono<?> hello() {
+    public Mono<?> hello(@AuthenticationPrincipal Authentication authentication) {
 //        return ReactiveSecurityContextHolder.getContext()
 //                .map(SecurityContext::getAuthentication);
-        return Mono.just("hello");
+        return Mono.just(authentication.getPrincipal());
     }
 
     @PostMapping("/login")
