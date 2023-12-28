@@ -25,7 +25,6 @@ public class LoginUserDetails implements UserDetails {
     private String password;
     private Integer status;
     private List<String> roles;
-    private String accessToken;
 
     public LoginUserDetails(Integer id, String username, String password, Integer status, @Nullable List<String> roles) {
         this.id = id;

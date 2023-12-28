@@ -1,10 +1,10 @@
 package com.yunxiao.service.demooauth.client.auth;
 
+import com.nimbusds.jose.JOSEObject;
+import com.yunxiao.service.demooauth.client.token.JOSEService;
 import lombok.AllArgsConstructor;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.token.Token;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import reactor.core.publisher.Mono;
@@ -16,25 +16,27 @@ import reactor.core.publisher.Mono;
 @AllArgsConstructor
 public class TokenAuthenticationManager implements ReactiveAuthenticationManager {
 
-    private final PersistenceTokenService tokenService;
+    private final JOSEService joseService;
     private final ReactiveUserDetailsService userDetailsService;
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         if (authentication instanceof PreAuthenticatedAuthenticationToken authenticationToken) {
             String accessToken = authenticationToken.getPrincipal().toString();
-            Token token;
+            JOSEObject joseObject;
             try {
-                token = tokenService.verifyToken(accessToken);
+                joseObject = joseService.verify(accessToken);
             } catch (Exception e) {
-                throw new BadCredentialsException("token校验失败");
+                // 返回未认证对象
+                // 如果返回为 empty Mono 或者 error Mono 会导致整个过滤链中断
+                return Mono.just(authentication);
             }
-            if (token != null) {
+            if (joseObject != null) {
                 authenticationToken.setAuthenticated(true);
-                return userDetailsService.findByUsername(token.getKey())
+                return userDetailsService.findByUsername(joseService.getPrincipal(joseObject))
                         .map(user -> new PreAuthenticatedAuthenticationToken(user.getUsername(), user.getPassword(), user.getAuthorities()));
             }
         }
-        return Mono.empty();
+        return Mono.just(authentication);
     }
 }

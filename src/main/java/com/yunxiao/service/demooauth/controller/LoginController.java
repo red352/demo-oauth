@@ -1,8 +1,8 @@
 package com.yunxiao.service.demooauth.controller;
 
-import com.yunxiao.service.demooauth.client.auth.PersistenceTokenService;
 import com.yunxiao.service.demooauth.client.login.LoginAuthentication;
 import com.yunxiao.service.demooauth.client.login.LoginUserDetails;
+import com.yunxiao.service.demooauth.client.token.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+
 /**
  * @author LuoYunXiao
  * @since 2023/12/25 19:29
@@ -20,7 +23,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class LoginController {
 
-    private final PersistenceTokenService persistenceTokenService;
+    private final JwtService jwtService;
     private final UserDetailsRepositoryReactiveAuthenticationManager manager;
 
     @GetMapping
@@ -31,14 +34,14 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public Mono<?> login(@RequestBody LoginAuthentication loginAuthentication) {
+    public Mono<String> login(@RequestBody LoginAuthentication loginAuthentication) {
         return manager.authenticate(loginAuthentication)
                 .map(Authentication::getPrincipal)
                 .cast(LoginUserDetails.class)
-                .map(authed -> {
-                    authed.setAccessToken(persistenceTokenService.allocateToken(authed.getUsername()).getKey());
-                    return authed;
-                });
+                .map(authed -> jwtService.generateBuilder()
+                        .baseJwtClaimsSet(builder -> builder.subject(authed.getUsername()))
+                        .claimObj(Map.of("time", LocalDateTime.now().toString()))
+                        .generate());
     }
 }
 

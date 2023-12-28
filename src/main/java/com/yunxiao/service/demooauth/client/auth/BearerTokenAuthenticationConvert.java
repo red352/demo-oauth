@@ -13,7 +13,7 @@ import java.util.List;
  * @author LuoYunXiao
  * @since 2023/12/26 20:05
  */
-public class TokenConvert implements ServerAuthenticationConverter {
+public class BearerTokenAuthenticationConvert implements ServerAuthenticationConverter {
     @Override
     public Mono<Authentication> convert(ServerWebExchange exchange) {
         List<String> list = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
